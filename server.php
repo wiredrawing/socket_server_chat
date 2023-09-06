@@ -1,9 +1,13 @@
 <?php
 
-ini_set("error_log", __DIR__."/error.log");
+ini_set("error_log", __DIR__ . "/error.log");
 
+const READ_BUFFER_SIZE = 16;
+// Specify the host/port to connect to
+$port = 50000;
+$ip_address = "127.0.0.1";
 // Create a TCP Stream socket
-$socket_name = "tcp://127.0.0.1:50000";
+$socket_name = sprintf("tcp://%s:%s", $ip_address, $port);
 // Bind the socket to an address/port
 $socket = stream_socket_server($socket_name, $errno, $errstr);
 
@@ -26,8 +30,9 @@ while (true) {
 
 
         // クライアントに接続が正常に完了したことを通知
-        fwrite($stream, "接続が完了しました。" . PHP_EOL);
-        print_r($wrapper);
+        $initiaize_message = sprintf("クライアント名[%s]として接続しました。%s", $client_name, PHP_EOL);
+        fwrite($stream, $initiaize_message, strlen($initiaize_message));
+        error_log(print_r($wrapper, true));
     }
 
     if (empty($wrapper)) {
@@ -47,25 +52,23 @@ while (true) {
         stream_set_blocking($readable_stream, false);
         $readable_messages = [];
         while (true) {
-            $buffer = fread($readable_stream, 16);
+            $buffer = fread($readable_stream, READ_BUFFER_SIZE);
             var_dump($key, $buffer);
             $readable_messages[] = $buffer;
-            if (strlen($buffer) < 16) {
+            if (strlen($buffer) < READ_BUFFER_SIZE) {
+                printf("読み込み完了...%s", PHP_EOL);
                 break;
             }
         }
 
         $message = implode("", $readable_messages);
-        error_log(__LINE__.$message);
+
         if (isset($client_name_list[$key]) !== true) {
             $client_name_list[$key] = $message;
             $message = sprintf("%sさんが入室しました。%s", $message, PHP_EOL);
-            error_log(__LINE__.$message);
         }
-        error_log(__LINE__.$message);
-        print_r($client_name_list);
-
-        printf("クライアントから受信したペイロード: %s %s", $message, PHP_EOL);
+        error_log(print_r($client_name_list, true));
+        error_log(sprintf("発言者[%s]:メッセージ[%s] %s", $client_name_list[$key], $message, PHP_EOL));
 
         // 現在接続中の全クライアントへ上記の{$readable_messags}を送信
         foreach ($write as $client_name_key => $stream) {
@@ -77,16 +80,14 @@ while (true) {
                 printf("streamが無効です。%s", PHP_EOL);
                 continue;
             }
-            error_log(__LINE__.$message);
+
             $fixed_message = sprintf("[%s]: %s %s", $client_name_list[$key], $message, PHP_EOL);
-            error_log(__LINE__.$message);
             var_dump($client_name_list[$key]);
             $bytes = fwrite($stream, $fixed_message, strlen($fixed_message));
             // 書き込みに失敗した場合,既に接続がきれているものとして扱う
             if ($bytes === false) {
                 unset($wrapper[$client_name_key]);
             }
-            // unset($message);
         }
     }
 }
