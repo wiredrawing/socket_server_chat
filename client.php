@@ -10,10 +10,8 @@ if ($socket === false) {
 }
 
 printf("あなたの名前を入力してください:");
-$stdin = fgets(STDIN);
-var_dump(mb_convert_encoding($stdin, "UTF-8"));
-var_dump($stdin);
-
+$your_name = readline("=> ");
+$bytes = fwrite($socket, $your_name, strlen($your_name));
 while (true) {
     $message = readline("=> ");
 
@@ -31,6 +29,9 @@ while (true) {
     //     $recieved_messages[] = $buffer;
     // }
 
+
+    // doing non-blocking
+    stream_set_blocking($socket, false);
     while(true) {
         $read = fread($socket, 1024);
         var_dump($read);
