@@ -8,8 +8,17 @@ $port = 50000;
 $ip_address = "127.0.0.1";
 // Create a TCP Stream socket
 $socket_name = sprintf("tcp://%s:%s", $ip_address, $port);
+
+$socket_context = stream_context_create([
+    "socket" => [
+        "backlog" => 256
+    ]
+]);
 // Bind the socket to an address/port
-$socket = stream_socket_server($socket_name, $errno, $errstr);
+$socket = stream_socket_server($socket_name, $errno, $errstr,
+    STREAM_SERVER_BIND | STREAM_SERVER_LISTEN, $socket_context);
+// encrypt the socket
+// stream_socket_enable_crypto($socket, true,    );
 
 // If the socket failed to bind, display an error message and exit.
 if ($socket === false) {

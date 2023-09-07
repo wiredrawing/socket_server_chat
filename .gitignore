@@ -1,2 +1,5 @@
 .idea
 error.log
+server.csr
+server.crt
+server.key
