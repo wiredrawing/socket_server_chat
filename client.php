@@ -1,7 +1,7 @@
 <?php
 
 
-$host = "ssl://127.0.0.1:51000";
+$host = "ssl://127.0.0.10:51000";
 $ssl_context = stream_context_create([ 'ssl' => [
     "local_cert" => __DIR__ . "/server.crt",
     "local_pk" => __DIR__ . "/server.key",

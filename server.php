@@ -5,7 +5,7 @@ ini_set("error_log", __DIR__ . "/error.log");
 const READ_BUFFER_SIZE = 16;
 // Specify the host/port to connect to
 $port = 51000;
-$ip_address = "127.0.0.1";
+$ip_address = "127.0.0.10";
 // Create a TCP Stream socket
 $socket_name = sprintf("ssl://%s:%s", $ip_address, $port);
 $ssl_context = [
