@@ -4,10 +4,10 @@ ini_set("error_log", __DIR__ . "/error.log");
 
 const READ_BUFFER_SIZE = 16;
 // Specify the host/port to connect to
-$port = 50000;
+$port = 51000;
 $ip_address = "127.0.0.1";
 // Create a TCP Stream socket
-$socket_name = sprintf("tcp://%s:%s", $ip_address, $port);
+$socket_name = sprintf("ssl://%s:%s", $ip_address, $port);
 $ssl_context = [
     "ssl" => [
         "local_cert" => __DIR__ . "/server.crt",
@@ -23,7 +23,7 @@ $socket = stream_socket_server($socket_name, $errno, $errstr,
     STREAM_SERVER_BIND | STREAM_SERVER_LISTEN, stream_context_create($ssl_context));
 
 // encrypt the connected socket
-stream_socket_enable_crypto($socket, true, STREAM_CRYPTO_METHOD_TLSv1_2_SERVER);
+// stream_socket_enable_crypto($socket, true, STREAM_CRYPTO_METHOD_TLSv1_2_SERVER);
 var_dump($socket);
 // encrypt the connected socket
 // stream_socket_enable_crypto($socket, true, STREAM_CRYPTO_METHOD_TLSv1_2_SERVER);

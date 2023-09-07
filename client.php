@@ -1,18 +1,19 @@
 <?php
 
 
-$host = "tcp://localhost:50000";
-$ssl_context = [
-    "ssl" => [
-        "cafile" => "C:/Users/a-sen/works/socket_server/server.crt",
-        // "local_key" => "C:/Users/a-sen/works/socket_server/server.key",
-    ],
-];
+$host = "ssl://127.0.0.1:51000";
+$ssl_context = stream_context_create([ 'ssl' => [
+    "local_cert" => __DIR__ . "/server.crt",
+    "local_pk" => __DIR__ . "/server.key",
+    'verify_peer'       => false,
+    'verify_peer_name'  => false,
+    'allow_self_signed' => true,
+    'verify_depth'      => 0 ]]);
 $socket = stream_socket_client($host, $errno, $errstr, 30,
-    STREAM_CLIENT_CONNECT, stream_context_create($ssl_context));
+    STREAM_CLIENT_CONNECT, $ssl_context);
 
 // encrypt the connected socket
-stream_socket_enable_crypto($socket, true, STREAM_CRYPTO_METHOD_TLSv1_2_CLIENT);
+// stream_socket_enable_crypto($socket, true, STREAM_CRYPTO_METHOD_TLSv1_2_CLIENT);
 if ($socket === false) {
     echo "$errstr ($errno)";
     exit;
