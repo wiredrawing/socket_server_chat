@@ -8,9 +8,25 @@ $port = 50000;
 $ip_address = "127.0.0.1";
 // Create a TCP Stream socket
 $socket_name = sprintf("tcp://%s:%s", $ip_address, $port);
+$ssl_context = [
+    "ssl" => [
+        "local_cert" => __DIR__ . "/server.crt",
+        "local_pk" => __DIR__ . "/server.key",
+        "verify_peer" => false,
+        "verify_peer_name" => false,
+        "allow_self_signed" => true,
+        // "ssltransport" => "tlsv1.2",
+    ],
+];
 // Bind the socket to an address/port
-$socket = stream_socket_server($socket_name, $errno, $errstr);
+$socket = stream_socket_server($socket_name, $errno, $errstr,
+    STREAM_SERVER_BIND | STREAM_SERVER_LISTEN, stream_context_create($ssl_context));
 
+// encrypt the connected socket
+stream_socket_enable_crypto($socket, true, STREAM_CRYPTO_METHOD_TLSv1_2_SERVER);
+var_dump($socket);
+// encrypt the connected socket
+// stream_socket_enable_crypto($socket, true, STREAM_CRYPTO_METHOD_TLSv1_2_SERVER);
 // If the socket failed to bind, display an error message and exit.
 if ($socket === false) {
     echo "$errstr ($errno)";
@@ -68,6 +84,7 @@ while (true) {
             $message = sprintf("%sさんが入室しました。%s", $message, PHP_EOL);
         }
         error_log(print_r($client_name_list, true));
+        error_log(sprintf("発言内容[%s] %s", $message, PHP_EOL));
         error_log(sprintf("発言者[%s]:メッセージ[%s] %s", $client_name_list[$key], $message, PHP_EOL));
 
         // 現在接続中の全クライアントへ上記の{$readable_messags}を送信

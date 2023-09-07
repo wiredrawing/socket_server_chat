@@ -2,13 +2,23 @@
 
 
 $host = "tcp://localhost:50000";
-$socket = stream_socket_client($host, $errno, $errstr, 30);
+$ssl_context = [
+    "ssl" => [
+        "cafile" => "C:/Users/a-sen/works/socket_server/server.crt",
+        // "local_key" => "C:/Users/a-sen/works/socket_server/server.key",
+    ],
+];
+$socket = stream_socket_client($host, $errno, $errstr, 30,
+    STREAM_CLIENT_CONNECT, stream_context_create($ssl_context));
 
+// encrypt the connected socket
+stream_socket_enable_crypto($socket, true, STREAM_CRYPTO_METHOD_TLSv1_2_CLIENT);
 if ($socket === false) {
     echo "$errstr ($errno)";
     exit;
 }
-
+// // 接続済みソケットを暗号化する
+// stream_socket_enable_crypto($socket, true, STREAM_CRYPTO_METHOD_TLSv1_2_CLIENT);
 printf("あなたの名前を入力してください:");
 $your_name = readline("=> ");
 $bytes = fwrite($socket, $your_name, strlen($your_name));
