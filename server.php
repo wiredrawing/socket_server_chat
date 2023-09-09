@@ -4,22 +4,32 @@ ini_set("error_log", __DIR__ . "/error.log");
 
 const READ_BUFFER_SIZE = 16;
 // Specify the host/port to connect to
-$port = 50000;
-$ip_address = "127.0.0.1";
+$port = 51000;
+$ip_address = "127.0.0.10";
+$ip_address = "192.168.0.16";
 // Create a TCP Stream socket
-$socket_name = sprintf("tcp://%s:%s", $ip_address, $port);
-
-$socket_context = stream_context_create([
-    "socket" => [
-        "backlog" => 256
-    ]
-]);
+$socket_name = sprintf("tls://%s:%s", $ip_address, $port);
+$ssl_context = [
+    "ssl" => [
+        "local_cert" => __DIR__ . "/practice/server_certificate.pem",
+        "local_pk" => __DIR__ . "/practice/server_private.key",
+        "verify_peer" => false,
+        "verify_peer_name" => false,
+        "allow_self_signed" => true,
+        // 証明書を作成する際に指定したパスフレーズ(※パスフレーズを指定していない場合はコメントアウト)
+        "passphrase" => "AAAaaa123",
+        // "ssltransport" => "tlsv1.2",
+    ],
+];
 // Bind the socket to an address/port
 $socket = stream_socket_server($socket_name, $errno, $errstr,
-    STREAM_SERVER_BIND | STREAM_SERVER_LISTEN, $socket_context);
-// encrypt the socket
-// stream_socket_enable_crypto($socket, true,    );
+    STREAM_SERVER_BIND | STREAM_SERVER_LISTEN, stream_context_create($ssl_context));
 
+// encrypt the connected socket
+// stream_socket_enable_crypto($socket, true, STREAM_CRYPTO_METHOD_TLSv1_2_SERVER);
+var_dump($socket);
+// encrypt the connected socket
+// stream_socket_enable_crypto($socket, true, STREAM_CRYPTO_METHOD_TLSv1_2_SERVER);
 // If the socket failed to bind, display an error message and exit.
 if ($socket === false) {
     echo "$errstr ($errno)";
@@ -71,12 +81,14 @@ while (true) {
         }
 
         $message = implode("", $readable_messages);
+        printf("受信したパケット[%s] %s", $message, PHP_EOL);
 
         if (isset($client_name_list[$key]) !== true) {
             $client_name_list[$key] = $message;
             $message = sprintf("%sさんが入室しました。%s", $message, PHP_EOL);
         }
         error_log(print_r($client_name_list, true));
+        error_log(sprintf("発言内容[%s] %s", $message, PHP_EOL));
         error_log(sprintf("発言者[%s]:メッセージ[%s] %s", $client_name_list[$key], $message, PHP_EOL));
 
         // 現在接続中の全クライアントへ上記の{$readable_messags}を送信
