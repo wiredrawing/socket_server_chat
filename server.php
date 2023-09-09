@@ -6,15 +6,18 @@ const READ_BUFFER_SIZE = 16;
 // Specify the host/port to connect to
 $port = 51000;
 $ip_address = "127.0.0.10";
+$ip_address = "192.168.0.16";
 // Create a TCP Stream socket
-$socket_name = sprintf("ssl://%s:%s", $ip_address, $port);
+$socket_name = sprintf("tls://%s:%s", $ip_address, $port);
 $ssl_context = [
     "ssl" => [
-        "local_cert" => __DIR__ . "/server.crt",
-        "local_pk" => __DIR__ . "/server.key",
+        "local_cert" => __DIR__ . "/practice/server_certificate.pem",
+        "local_pk" => __DIR__ . "/practice/server_private.key",
         "verify_peer" => false,
         "verify_peer_name" => false,
         "allow_self_signed" => true,
+        // 証明書を作成する際に指定したパスフレーズ(※パスフレーズを指定していない場合はコメントアウト)
+        "passphrase" => "AAAaaa123",
         // "ssltransport" => "tlsv1.2",
     ],
 ];
@@ -78,6 +81,7 @@ while (true) {
         }
 
         $message = implode("", $readable_messages);
+        printf("受信したパケット[%s] %s", $message, PHP_EOL);
 
         if (isset($client_name_list[$key]) !== true) {
             $client_name_list[$key] = $message;
