@@ -1,17 +1,17 @@
 <?php
 
 
-$host = "tls://192.168.0.16:51000";
+$host = "tcp://192.168.0.16:51000";
 $ssl_context = stream_context_create([
-    'ssl' => [
-        "local_cert" => __DIR__ . "/practice/server_certificate.pem",
-        "local_pk" => __DIR__ . "/practice/server_private.key",
-        'verify_peer' => false,
-        'verify_peer_name' => false,
-        'allow_self_signed' => true,
-        "passphrase" => "AAAaaa123",
-        'verify_depth' => 0,
-    ],
+    // 'ssl' => [
+    //     "local_cert" => __DIR__ . "/practice/server_certificate.pem",
+    //     "local_pk" => __DIR__ . "/practice/server_private.key",
+    //     'verify_peer' => false,
+    //     'verify_peer_name' => false,
+    //     'allow_self_signed' => true,
+    //     "passphrase" => "AAAaaa123",
+    //     'verify_depth' => 0,
+    // ],
 ]);
 $socket = stream_socket_client($host, $errno, $errstr, 30, STREAM_CLIENT_CONNECT, $ssl_context);
 
