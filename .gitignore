@@ -3,3 +3,6 @@ error.log
 server.crt
 server.key
 server.csr
+scrape.php
+scrape2.php
+/vendor/*
