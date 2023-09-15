@@ -72,10 +72,6 @@ class Server
      */
     public function run(callable $customieze, callable $handler = null)
     {
-        $client_address = null;
-        $client_port = null;
-        /** @var string $client_name */
-        $client_name = null;
         while (true) {
             socket_set_nonblock($this->socket);
             $client = socket_accept($this->socket);
@@ -104,19 +100,13 @@ class Server
             foreach ($read as $read_key => $read_value) {
 
                 socket_set_nonblock($read_value);
-                $messages = [];
-                while (true) {
-                    $buffer = socket_read($read_value, static::MAX_BUFFER_SIZE);
-                    if ($buffer === false) {
-                        break;
-                    }
-                    $messages[] = $buffer;
-                    if (strlen($buffer) < static::MAX_BUFFER_SIZE) {
-                        break;
-                    }
+                $message = $this->read($read_value, static::MAX_BUFFER_SIZE);
+                if ($message === false) {
+                    // クライアントが切断した場合は,クライアントを切断する
+                    socket_close($read_value);
+                    unset($this->wrapper[$read_key]);
+                    continue;
                 }
-                // クライアントが受信した入力内容
-                $message = implode("", $messages);
                 $client_name = $this->formatClientName($read_value);
                 // クライアントが初回接続した場合は,クライアント名を登録する
                 if (isset($this->nameListOfConnectedClient[$client_name]) !== true) {
@@ -135,14 +125,48 @@ class Server
                         continue;
                     }
                     if (isset($handler)) {
-                        $handler($message, $write_value);
+                        // メッセージ結果を返却するようにコールバックに指示する
+                        $message = $handler($message);
                     } else {
                         // コールバックが指定されない場合はそのまま返却
-                        socket_write($write_value, $message, strlen($message));
+                        // socket_writeのWarningを抑制するために@を付与
+                        $is_success = @socket_write($write_value, $message, strlen($message));
+                        // ----------------------------------------------------------------------
+                        // クライアントへの書き込みに失敗した場合は,クライアントを切断する
+                        // ----------------------------------------------------------------------
+                        if ($is_success === false) {
+                            socket_close($write_value);
+                            unset($this->wrapper[$write_key]);
+                        }
                     }
                 }
             }
         }
+    }
+
+    /**
+     * ソケットから読み込みを行うが,読み込んだバイト数が指定したバッファ未満になったら
+     * 読み込みを終了する
+     *
+     * @param $socket
+     * @param int $size
+     * @return false|string
+     */
+    public function read($socket, int $size = self::MAX_BUFFER_SIZE)
+    {
+        $messages = [];
+        while(true) {
+            $buffer = @socket_read($socket, $size);
+            if ($buffer === false) {
+                // falseが帰ってきた場合は,呼び出し側で接続済みソケットリストから除外すること
+                return false;
+            }
+            $messages[] = $buffer;
+            if (strlen($buffer) < $size) {
+                break;
+            }
+        }
+        return implode("", $messages);
     }
 
     /**
@@ -176,9 +200,9 @@ class Server
     /**
      * 管理中のクライアントの疎通確認を行う
      *
-     * @return void
+     * @return Socket[]
      */
-    public function connectivityCheck()
+    public function connectivityCheck(): array
     {
         foreach ($this->wrapper as $client_name => $client_socket) {
             $exploded_client_name = explode(":", $client_name);
@@ -192,11 +216,13 @@ class Server
                 unset($this->wrapper[$client_name]);
             }
         }
+        return $this->wrapper;
     }
 }
 
-$server = new Server();
+
 try {
+    $server = new Server();
     $server->startServer();
     $server->run(function ($client_name) {
         error_log(sprintf("クライアント名[%s]として接続しました。", $client_name));
