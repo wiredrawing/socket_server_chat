@@ -175,6 +175,23 @@ class Server
             }
         }
     }
+
+    /**
+     * ソケットクライアントから接続元のIPおよびポートからクライアント名を作成する
+     * @param $client
+     * @return string
+     * @throws Exception
+     */
+    public function formatClientName ($client): string
+    {
+        // Get the socket client name that connected to this server.
+        $result = socket_getpeername($client, $client_address, $client_port);
+        if ($result === false) {
+            throw new Exception("socket_getpeername failed");
+        }
+        // Create the client name.
+        return sprintf("%s:%s", $client_address, $client_port);
+    }
 }
 
 $server = new Server();
