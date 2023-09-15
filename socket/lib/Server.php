@@ -80,13 +80,7 @@ class Server
             socket_set_nonblock($this->socket);
             $client = socket_accept($this->socket);
             if ($client !== false) {
-                // Get the socket client name that connected to this server.
-                $result = socket_getpeername($client, $client_address, $client_port);
-                if ($result === false) {
-                    throw new Exception("socket_getpeername failed");
-                }
-                // Create the client name.
-                $client_name = sprintf("%s:%s", $client_address, $client_port);
+                $client_name = $this->formatClientName($client);
                 $this->wrapper[$client_name] = $client;
                 if (isset($customieze)) {
                     $customieze($client_name);
@@ -123,9 +117,16 @@ class Server
                 }
                 // クライアントが受信した入力内容
                 $message = implode("", $messages);
+                $client_name = $this->formatClientName($read_value);
+                // クライアントが初回接続した場合は,クライアント名を登録する
                 if (isset($this->nameListOfConnectedClient[$client_name]) !== true) {
                     $this->nameListOfConnectedClient[$client_name] = $message;
-                    $message = sprintf("<%s>さんが入室しました。", $message);
+                    $message = sprintf("[%s]<%s>さんが入室しました。\n", $this->nameListOfConnectedClient[$client_name], $message);
+                    printf("%s", $message);
+                } else {
+                    // クライアントが既に入室済みの場合
+                    $message = sprintf("[%s]:%s\n", $this->nameListOfConnectedClient[$client_name],  $message);
+                    printf("%s", $message);
                 }
 
                 foreach ($write as $write_key => $write_value) {
@@ -145,6 +146,24 @@ class Server
     }
 
     /**
+     * ソケットクライアントから接続元のIPおよびポートからクライアント名を作成する
+     *
+     * @param $client
+     * @return string
+     * @throws Exception
+     */
+    public function formatClientName($client): string
+    {
+        // Get the socket client name that connected to this server.
+        $result = socket_getpeername($client, $client_address, $client_port);
+        if ($result === false) {
+            throw new Exception("socket_getpeername failed");
+        }
+        // Create the client name.
+        return sprintf("%s:%s", $client_address, $client_port);
+    }
+
+    /**
      * 現在接続中の全クライアントを返却する
      *
      * @return Socket[]
@@ -153,7 +172,6 @@ class Server
     {
         return $this->wrapper;
     }
-
 
     /**
      * 管理中のクライアントの疎通確認を行う
@@ -174,23 +192,6 @@ class Server
                 unset($this->wrapper[$client_name]);
             }
         }
-    }
-
-    /**
-     * ソケットクライアントから接続元のIPおよびポートからクライアント名を作成する
-     * @param $client
-     * @return string
-     * @throws Exception
-     */
-    public function formatClientName ($client): string
-    {
-        // Get the socket client name that connected to this server.
-        $result = socket_getpeername($client, $client_address, $client_port);
-        if ($result === false) {
-            throw new Exception("socket_getpeername failed");
-        }
-        // Create the client name.
-        return sprintf("%s:%s", $client_address, $client_port);
     }
 }
 
