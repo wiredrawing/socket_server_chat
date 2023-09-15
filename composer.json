@@ -1,5 +1,6 @@
 {
     "require": {
-        "paquettg/php-html-parser": "^3.1"
+        "paquettg/php-html-parser": "^3.1",
+      "ext-sockets": "*"
     }
 }
