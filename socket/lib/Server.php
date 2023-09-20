@@ -117,7 +117,7 @@ class Server
                     printf("%s", $message);
                 } else {
                     // クライアントが既に入室済みの場合
-                    $message = sprintf("[%s]:%s\n", $this->nameListOfConnectedClient[$client_name],  $message);
+                    $message = sprintf("[%s]:%s\n", $this->nameListOfConnectedClient[$client_name], $message);
                     printf("%s", $message);
                 }
 
@@ -147,28 +147,25 @@ class Server
     }
 
     /**
-     * ソケットから読み込みを行うが,読み込んだバイト数が指定したバッファ未満になったら
-     * 読み込みを終了する
+     * 管理中のクライアントの疎通確認を行う
      *
-     * @param $socket
-     * @param int $size
-     * @return false|string
+     * @return Socket[]
      */
-    public function read($socket, int $size = self::MAX_BUFFER_SIZE)
+    public function connectivityCheck(): array
     {
-        $messages = [];
-        while(true) {
-            $buffer = @socket_read($socket, $size);
-            if ($buffer === false) {
-                // falseが帰ってきた場合は,呼び出し側で接続済みソケットリストから除外すること
-                return false;
-            }
-            $messages[] = $buffer;
-            if (strlen($buffer) < $size) {
-                break;
+        foreach ($this->wrapper as $client_name => $client_socket) {
+            $exploded_client_name = explode(":", $client_name);
+            list($address, $port) = $exploded_client_name;
+            // クライアントにnullバイトを送信する
+            $connectivity_message = "\0";
+            $connectivity_result = @socket_sendto($client_socket, $connectivity_message, strlen($connectivity_message), 0, $address, $port);
+            if ($connectivity_result === false) {
+                // クライアントとの疎通が確認できなかった場合は,クライアントを切断する
+                socket_close($client_socket);
+                unset($this->wrapper[$client_name]);
             }
         }
-        return implode("", $messages);
+        return $this->wrapper;
     }
 
     /**
@@ -190,34 +187,37 @@ class Server
     }
 
     /**
+     * ソケットから読み込みを行うが,読み込んだバイト数が指定したバッファ未満になったら
+     * 読み込みを終了する
+     *
+     * @param $socket
+     * @param int $size
+     * @return false|string
+     */
+    public function read($socket, int $size = self::MAX_BUFFER_SIZE)
+    {
+        $messages = [];
+        while (true) {
+            $buffer = @socket_read($socket, $size);
+            if ($buffer === false) {
+                // falseが帰ってきた場合は,呼び出し側で接続済みソケットリストから除外すること
+                return false;
+            }
+            $messages[] = $buffer;
+            if (strlen($buffer) < $size) {
+                break;
+            }
+        }
+        return implode("", $messages);
+    }
+
+    /**
      * 現在接続中の全クライアントを返却する
      *
      * @return Socket[]
      */
     public function connectedClientList()
     {
-        return $this->wrapper;
-    }
-
-    /**
-     * 管理中のクライアントの疎通確認を行う
-     *
-     * @return Socket[]
-     */
-    public function connectivityCheck(): array
-    {
-        foreach ($this->wrapper as $client_name => $client_socket) {
-            $exploded_client_name = explode(":", $client_name);
-            list($address, $port) = $exploded_client_name;
-            // クライアントにnullバイトを送信する
-            $connectivity_message = "\0";
-            $connectivity_result = @socket_sendto($client_socket, $connectivity_message, strlen($connectivity_message), 0, $address, $port);
-            if ($connectivity_result === false) {
-                // クライアントとの疎通が確認できなかった場合は,クライアントを切断する
-                socket_close($client_socket);
-                unset($this->wrapper[$client_name]);
-            }
-        }
         return $this->wrapper;
     }
 }
@@ -230,4 +230,6 @@ try {
         error_log(sprintf("クライアント名[%s]として接続しました。", $client_name));
     });
 } catch (Exception $e) {
+    printf("%s", $e->getMessage());
+    exit();
 }
