@@ -57,5 +57,5 @@ while (true) {
         }
     }
     $message = implode("", $recieved_messages);
-    printf("受信したメッセージ[%s] %s", $message, PHP_EOL);
+    printf("%s %s", $message, PHP_EOL);
 }

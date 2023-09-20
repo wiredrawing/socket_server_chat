@@ -73,6 +73,8 @@ class Server
     public function run(callable $customieze, callable $handler = null)
     {
         while (true) {
+            // 定期的に疎通確認を行い,切断されたクライアントを除外する
+            $this->connectivityCheck();
             socket_set_nonblock($this->socket);
             $client = socket_accept($this->socket);
             if ($client !== false) {
@@ -209,7 +211,7 @@ class Server
             list($address, $port) = $exploded_client_name;
             // クライアントにnullバイトを送信する
             $connectivity_message = "\0";
-            $connectivity_result = socket_sendto($client_socket, $connectivity_message, strlen($connectivity_message), 0, $address, $port);
+            $connectivity_result = @socket_sendto($client_socket, $connectivity_message, strlen($connectivity_message), 0, $address, $port);
             if ($connectivity_result === false) {
                 // クライアントとの疎通が確認できなかった場合は,クライアントを切断する
                 socket_close($client_socket);
