@@ -129,17 +129,16 @@ class Server
                     if (isset($handler)) {
                         // メッセージ結果を返却するようにコールバックに指示する
                         $message = $handler($message);
-                    } else {
-                        // コールバックが指定されない場合はそのまま返却
-                        // socket_writeのWarningを抑制するために@を付与
-                        $is_success = @socket_write($write_value, $message, strlen($message));
-                        // ----------------------------------------------------------------------
-                        // クライアントへの書き込みに失敗した場合は,クライアントを切断する
-                        // ----------------------------------------------------------------------
-                        if ($is_success === false) {
-                            socket_close($write_value);
-                            unset($this->wrapper[$write_key]);
-                        }
+                    }
+                    // コールバックが指定されない場合はそのまま返却
+                    // socket_writeのWarningを抑制するために@を付与
+                    $is_success = @socket_write($write_value, $message, strlen($message));
+                    // ----------------------------------------------------------------------
+                    // クライアントへの書き込みに失敗した場合は,クライアントを切断する
+                    // ----------------------------------------------------------------------
+                    if ($is_success === false) {
+                        socket_close($write_value);
+                        unset($this->wrapper[$write_key]);
                     }
                 }
             }
