@@ -75,6 +75,10 @@ class Server
         while (true) {
             // 定期的に疎通確認を行い,切断されたクライアントを除外する
             $this->connectivityCheck();
+            // 100秒後に接続中のクライアントを表示する
+            if (time() % 100 === 0) {
+                print_r($this->wrapper);
+            }
             socket_set_nonblock($this->socket);
             $client = socket_accept($this->socket);
             if ($client !== false) {
@@ -179,7 +183,7 @@ class Server
         // Get the socket client name that connected to this server.
         $result = socket_getpeername($client, $client_address, $client_port);
         if ($result === false) {
-            throw new Exception("socket_getpeername failed");
+            return (string)null;
         }
         // Create the client name.
         return sprintf("%s:%s", $client_address, $client_port);
