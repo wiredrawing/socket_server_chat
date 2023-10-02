@@ -1,6 +1,10 @@
 <?php
 
 
+/**
+ * このServerクラスはStreamではなく
+ * 拡張もモジュールのSocketを使用している
+ */
 class Server
 {
 
