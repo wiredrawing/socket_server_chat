@@ -89,9 +89,6 @@ class ServerForStream
                 printf("[%s] 現在接続中のクライアントはいません。%s", date("Y-m-d H:i:s"), PHP_EOL);
                 continue;
             }
-            $read = $this->acceptedSockets;
-            $write = null;
-            $except = null;
             $timeout = 3;
             $read = $write = $except = $this->acceptedSockets;
             $number = stream_select($read, $write, $except, $timeout);
