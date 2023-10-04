@@ -1,6 +1,15 @@
 <?php
 
 
+interface Handler
+{
+    /**
+     * @param string $data
+     * @return string
+     */
+    public function handle(string $data): string;
+}
+
 class ServerForStream
 {
 
@@ -19,6 +28,11 @@ class ServerForStream
      * @var array
      */
     private $acceptedSockets = [];
+
+    /**
+     * @var array
+     */
+    private $socketNameList = [];
 
     /**
      * @param string $address
@@ -53,10 +67,11 @@ class ServerForStream
     /**
      * 4.accept(ソケットの待受)を行う
      *
+     * @param callable|null $f
      * @return mixed
      * @throws Exception
      */
-    public function run()
+    public function run(callable $f = null)
     {
         // If the member variable $server is null, throw an exception.
         if ($this->server === null) {
@@ -64,10 +79,6 @@ class ServerForStream
         }
         while (true) {
             $socket = @stream_socket_accept($this->server, 3);
-            // if ($socket !== false) {
-            //     printf("[%s] Could not get valid socket.%s", date("Y-m-d H:i:s"), PHP_EOL);
-            //     continue;
-            // }
             if ($socket !== false) {
                 // 受付完了したソケットを配列にまとめる.
                 // この処理は初回受付分のみ通過する
@@ -79,8 +90,8 @@ class ServerForStream
                 continue;
             }
             $read = $this->acceptedSockets;
-            // $write = null;
-            // $except = null;
+            $write = null;
+            $except = null;
             $timeout = 3;
             $read = $write = $except = $this->acceptedSockets;
             $number = stream_select($read, $write, $except, $timeout);
@@ -97,6 +108,15 @@ class ServerForStream
                 // そのため読み込み可能なソケットをnon-blockingとする
                 // ------------------------------------------------------
                 $data_from_socket = $this->read($read_value);
+                if (isset($f)) {
+                    $data_from_socket = $f($data_from_socket);
+                }
+                // Socketの名前を取得し,ユーザー名と紐付ける
+                $socket_name = stream_socket_get_name($read_value, true);
+                if (isset($this->socketNameList[$socket_name]) !== true) {
+                    $this->socketNameList[$socket_name] = $data_from_socket;
+                    $data_from_socket = sprintf("%sさんが入室しました。", $data_from_socket);
+                }
 
                 // $write変数には現時点で書き込み可能なソケットが格納されている
                 foreach ($write as $write_key => $write_value) {
@@ -134,14 +154,30 @@ class ServerForStream
     }
 }
 
+class MessageHandler implements Handler
+{
+
+    /**
+     * @param string $data
+     * @return string
+     */
+    public function handle(string $data): string
+    {
+        return sprintf("You said: %s", $data);
+    }
+}
 
 try {
-    $address = "127.0.0.1";
-    $port = 15400;
+    $address = "192.168.0.16";
+    $port = 51000;
     $server = new ServerForStream($address, $port);
 
     $server->startServer();
-    $server->run();
+    // 読み取ったデータを加工するコールバック関数を指定する
+    $server->run([
+        new MessageHandler(),
+        "handle",
+    ]);
 
 } catch (Exception $e) {
     printf("Error: %s", $e->getMessage());
