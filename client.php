@@ -1,7 +1,7 @@
 <?php
 
 
-$host = "tcp://192.168.0.16:51000";
+$host = "tcp://192.168.0.16:11180";
 $ssl_context = stream_context_create([
     // 'ssl' => [
     //     "local_cert" => __DIR__ . "/practice/server_certificate.pem",
@@ -23,18 +23,18 @@ if ($socket === false) {
 }
 // // 接続済みソケットを暗号化する
 // stream_socket_enable_crypto($socket, true, STREAM_CRYPTO_METHOD_TLSv1_2_CLIENT);
-printf("あなたの名前を入力してください:");
-while(true) {
-    $your_name = readline("=> ");
-    if (strlen($your_name) > 0 ) {
-        $bytes = fwrite($socket, $your_name, strlen($your_name));
-        break;
-    }
-    printf("名前が入力されていません。%s", PHP_EOL);
-}
+// printf("あなたの名前を入力してください:");
+// while(true) {
+//     $your_name = readline("=> ");
+//     if (strlen($your_name) > 0 ) {
+//         $bytes = fwrite($socket, $your_name, strlen($your_name));
+//         break;
+//     }
+//     printf("名前が入力されていません。%s", PHP_EOL);
+// }
 
 while (true) {
-    printf("[%s] %s", $your_name, PHP_EOL);
+    // printf("[%s] %s", $your_name, PHP_EOL);
     $message = readline("=> ");
 
     if (strlen($message) > 0) {

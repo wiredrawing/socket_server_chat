@@ -57,6 +57,8 @@ class ServerForStream
             ],
         ]);
         // stream_socket_server()でソケットのbindとlistenが自動で行われる
+        // socket拡張における
+        // (1).socket_create, (2).socket_bind, (3).socket_listenまでを一度にやってくれる
         $this->server = stream_socket_server($this->socketAddress, $errno, $errstr, STREAM_SERVER_BIND | STREAM_SERVER_LISTEN, $context);
         if ($this->server === false) {
             return false;
@@ -80,6 +82,7 @@ class ServerForStream
         while (true) {
             $socket = @stream_socket_accept($this->server, 3);
             if ($socket !== false) {
+                stream_socket_sendto($socket, "サーバーに接続しました。");
                 // 受付完了したソケットを配列にまとめる.
                 // この処理は初回受付分のみ通過する
                 $this->acceptedSockets[] = $socket;
@@ -105,9 +108,14 @@ class ServerForStream
                 // そのため読み込み可能なソケットをnon-blockingとする
                 // ------------------------------------------------------
                 $data_from_socket = $this->read($read_value);
+                if (strlen($data_from_socket) === 0) {
+                    // 読み取り可能なデータがない場合は次のループへ
+                    continue;
+                }
                 if (isset($f)) {
                     $data_from_socket = $f($data_from_socket);
                 }
+                printf("受信したデータ[%s] %s", $data_from_socket, PHP_EOL);
                 // Socketの名前を取得し,ユーザー名と紐付ける
                 $socket_name = stream_socket_get_name($read_value, true);
                 if (isset($this->socketNameList[$socket_name]) !== true) {
@@ -122,7 +130,11 @@ class ServerForStream
                         continue;
                     }
                     // 上記で取得された読み取りデータを書き込み可能な他全ソケットに書き込む
-                    stream_socket_sendto($write_value, $data_from_socket);
+                    $res = @stream_socket_sendto($write_value, $data_from_socket);
+                    if ($res === false) {
+                        printf("書き込みに失敗しました。%s", PHP_EOL);
+                        unset($this->acceptedSockets[$write_key]);
+                    }
                 }
             }
         }
